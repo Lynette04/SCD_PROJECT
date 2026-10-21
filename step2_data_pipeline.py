@@ -5,6 +5,12 @@ import os #to count files in folders
 img_size = (224,224) #224 pixels tall and 224 pixels wide
 batch_size = 16 #16 images in a batch
 
+IMAGENET_MEAN = tf.constant([0.485, 0.456, 0.406]) * 255.0
+IMAGENET_STD = tf.constant([0.229,0.224,0.225]) * 255.0
+
+def efficientnet_preprocess(images):
+    return (images - IMAGENET_MEAN) / IMAGENET_STD
+
 #create a sort of pipeline with ordered steps(sequential) to perform on the training set images
 data_augmentation = tf.keras.Sequential([
     tf.keras.layers.RandomFlip("horizontal_and_vertical"), #turn the images in opposite directions like right/left or up/down
@@ -14,7 +20,7 @@ data_augmentation = tf.keras.Sequential([
 ])
 
 
-def get_datasets():
+def get_datasets(preprocess_fn=preprocess_input):
     #check in the train folder inside data and resize each image to 224 by 224 pixels  
     #and group the images into groups of 16 called batches. 
     #The labels should be in binary 0 for Normal and 1 for sickle
@@ -47,11 +53,11 @@ def get_datasets():
     #Function that takes a batch of images with their labels, augments then normalizes them and finally returns the images with their labels.
     def prepare_train_batch(images,labels):
         images = data_augmentation(images)
-        images = preprocess_input(images)
+        images = preprocess_fn(images)
         return images, labels
     #Similar function to above but has no augmentation since the other images are not for training the model
     def prepare_evaluation_batch(images, labels):
-        images= preprocess_input(images)
+        images= preprocess_fn(images)
         return images, labels
     
     #Run the datasets through their required functions
