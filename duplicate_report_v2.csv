@@ -1,0 +1,4 @@
+image_a,image_b,type,hash_distance_bits,split_a,split_b,class_a,class_b,crosses_splits,label_conflict
+data\train\normal\141.jpg,data\test\normal\144.jpg,exact,0,train,test,normal,normal,True,False
+data\train\normal\143.jpg,data\val\normal\142.jpg,exact,0,train,val,normal,normal,True,False
+data\train\sickle\34.jpg,data\train\sickle\98.jpg,near,8,train,train,sickle,sickle,False,False
