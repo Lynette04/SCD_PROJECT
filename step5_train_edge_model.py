@@ -1,5 +1,8 @@
 import tensorflow as tf
 from tensorflow.keras import layers, models
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
 from tensorflow.keras.applications import MobileNetV2
 
 from step2_data_pipeline import get_datasets, get_class_weights
@@ -56,7 +59,19 @@ if __name__== "__main__":
         class_weight=class_weights,
         callbacks=[early_stop]
     )
-    
+    loss = history.history["loss"]
+    val_loss = history.history["val_loss"]
+    epochs = range(1, len(loss) + 1)
+
+    plt.plot(epochs, loss, label="Training loss")
+    plt.plot(epochs, val_loss, label="Validation loss")
+    best = val_loss.index(min(val_loss)) + 1
+    plt.axvline(best, linestyle="--", label=f"Best epoch ({best})")
+    plt.xlabel("Epoch")
+    plt.ylabel("Loss (binary cross-entropy)")
+    plt.legend()
+    plt.savefig("loss_curves.png", dpi=200, bbox_inches="tight")
+    plt.savefig("training_loss_edge.png")
     print("FINAL EVALUATION USING THE TEST SET")
     test_results = model.evaluate(test_dataset, return_dict=True)
     for metric_name, value in test_results.items():
