@@ -1,4 +1,7 @@
 import tensorflow as tf
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
 from tensorflow.keras import layers
 from step2_data_pipeline import get_datasets, get_class_weights
 
@@ -61,7 +64,20 @@ history = model.fit(
     class_weight = class_weights,
     callbacks = [early_stop]
 )
+loss = history.history["loss"]
+val_loss = history.history["val_loss"]
+epochs = range(1, len(loss) + 1)
 
+plt.plot(epochs, loss, label="Training loss")
+plt.plot(epochs, val_loss, label="Validation loss")
+best = val_loss.index(min(val_loss)) + 1
+plt.axvline(best, linestyle="--", label=f"Best epoch ({best})")
+plt.xlabel("Epoch")
+plt.ylabel("Loss (binary cross-entropy)")
+plt.legend()
+plt.savefig("loss_curves.png", dpi=200, bbox_inches="tight")
+plt.savefig("training_loss_finetune.png")
+    
 #Using the test images to evaluate the fine-tuned model
 test_results = model.evaluate(test_dataset, return_dict=True)
 for metric_name, value in test_results.items():
