@@ -122,7 +122,15 @@ The web page is at <http://127.0.0.1:5000>. As before, `app.py` only receives th
 
 The loss plots show the training and validation loss for each epoch, with a dashed line on the best epoch.
 
-`augmentation_check.py`, `eval_all_models.py` and `check_quantisation.py` still use TensorFlow and the `.keras` files, so they don't run in this environment.
+Three more checks are available. They only print results and don't change any file:
+
+```powershell
+python eval_all_models.py                                  # confusion matrix, accuracy, precision and recall of all 5 models
+python augmentation_check.py                               # checks that augmentation changes the images
+python check_quantisation.py sickle_cell_edge_model.pt     # shows int8 quantisation on one layer's real weights
+```
+
+`check_quantisation.py` can take any `.pt` model, plus a layer number from the list it prints, for example `python check_quantisation.py sickle_cell_model.pt 12`.
 
 ## What changed
 

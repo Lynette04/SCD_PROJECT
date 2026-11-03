@@ -5,13 +5,13 @@ Shows the int8 quantisation formulas working on REAL weights from one of your sa
 Read-only: it loads the model, copies one layer's weights into numpy, and prints results.
 It does not change or save any model.
 
-Run from your project folder (where the .keras files are):
-    python check_quantisation.py sickle_cell_edge_model.keras
+Run from your project folder (where the .pt files are):
+    python check_quantisation.py sickle_cell_edge_model.pt
 You can also try:
-    python check_quantisation.py sickle_cell_model.keras
-    python check_quantisation.py sickle_cell_effnet_lite0.keras
+    python check_quantisation.py sickle_cell_model.pt
+    python check_quantisation.py sickle_cell_effnet_lite0.pt
 To look at a different layer, add its position in the list printed at the top:
-    python check_quantisation.py sickle_cell_edge_model.keras 12
+    python check_quantisation.py sickle_cell_edge_model.pt 12
 """
 import sys
 
@@ -34,8 +34,8 @@ def dequantise_asymmetric(q, S, Z):
 
 def quantise_per_channel_symmetric(r):
     """Per-output-channel int8 with zero point 0 (the style TensorFlow Lite uses for weights)."""
-    flat = r.reshape(-1, r.shape[-1])                  # last axis = output channels
-    scales = np.abs(flat).max(axis=0) / 127.0
+    flat = r.reshape(r.shape[0], -1)                   # first axis = output channels in PyTorch (Keras keeps them last)
+    scales = np.abs(flat).max(axis=1, keepdims=True) / 127.0
     scales[scales == 0] = 1.0
     q = np.clip(np.round(flat / scales), -127, 127).astype(np.int8)
     recovered = (q.astype(np.float32) * scales).reshape(r.shape)
@@ -69,15 +69,16 @@ def report(r, label):
 
 # ---------- load a real model ----------
 def main():
-    import keras
+    from pytorch_training import load_model
 
-    path = sys.argv[1] if len(sys.argv) > 1 else "sickle_cell_edge_model.keras"
-    model = keras.models.load_model(path)
+    path = sys.argv[1] if len(sys.argv) > 1 else "sickle_cell_edge_model.pt"
+    model = load_model(path)
 
+    #Convolution and dense kernels are the weights with 4 or 2 dimensions.
+    #Batch normalisation weights have 1 dimension, so they are left out.
     kernels = []
-    for w in model.weights:
-        name = getattr(w, "path", None) or w.name
-        if "kernel" in name and len(w.shape) in (2, 4):
+    for name, w in model.state_dict().items():
+        if name.endswith("weight") and w.ndim in (2, 4):
             kernels.append((name, w))
     if not kernels:
         raise SystemExit("No convolution or dense kernels found in this model.")
@@ -89,7 +90,7 @@ def main():
 
     pick = int(sys.argv[2]) if len(sys.argv) > 2 else len(kernels) // 2
     name, w = kernels[pick]
-    report(w.numpy(), f"Layer {pick}: {name}  shape {tuple(w.shape)}")
+    report(w.detach().cpu().numpy(), f"Layer {pick}: {name}  shape {tuple(w.shape)}")
 
 
 if __name__ == "__main__":
