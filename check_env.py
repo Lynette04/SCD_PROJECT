@@ -22,21 +22,19 @@ except ImportError:
     print("psutil is not installed. Run: pip install psutil   (or read RAM and cores from Task Manager)")
  
 try:
-    import tensorflow as tf
-    print("TensorFlow:", tf.__version__)
-    print("GPUs visible to TensorFlow:", tf.config.list_physical_devices("GPU"))
-    try:
-        import keras
-        print("Keras:", keras.__version__)
-    except Exception as e:
-        print("Keras version not read:", e)
+    import torch
+    print("PyTorch:", torch.__version__)
+    if torch.cuda.is_available():
+        print("GPUs visible to PyTorch:", [torch.cuda.get_device_name(i) for i in range(torch.cuda.device_count())])
+    else:
+        print("GPUs visible to PyTorch: none, training runs on the CPU")
 except ImportError:
-    print("TensorFlow is not installed in this environment.")
- 
-for name in ("keras_hub", "numpy", "PIL"):
+    print("PyTorch is not installed in this environment.")
+
+from importlib.metadata import PackageNotFoundError, version #reads the installed version of a package
+
+for name in ("timm", "numpy", "pillow", "h5py", "matplotlib", "flask"):
     try:
-        module = __import__(name)
-        print(f"{name}:", getattr(module, "__version__", "version not available"))
-    except ImportError:
+        print(f"{name}:", version(name))
+    except PackageNotFoundError:
         print(f"{name}: not installed")
- 
