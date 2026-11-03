@@ -1,13 +1,4 @@
-<<<<<<< HEAD
-import tensorflow as tf
-import matplotlib
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt
-from tensorflow.keras import layers, models #layers to build the thinking parts of CNN, models to assemble full model of layers
-from tensorflow.keras.applications import MobileNetV2 #import the pre trained model built into Keras
-=======
-from pytorch_training import build_pretrained_model, evaluate, fit, save_model, summary #the model and training tools shared by the scripts
->>>>>>> 6513c5efaf825d95b0dbf7206d8611868b7cc452
+from pytorch_training import build_pretrained_model, evaluate, fit, plot_loss, save_model, summary #the model and training tools shared by the scripts
 from step2_data_pipeline import get_datasets, get_class_weights #borrow the functions of the previous file
 
 img_size = (224,224) #required size for images expected by MobileNetV2
@@ -66,28 +57,8 @@ if __name__== "__main__":
         learning_rate=1e-3,
         patience=4
     )
-<<<<<<< HEAD
-    
-    
+    plot_loss(history, "loss_curves.png", "training_loss.png") #save a picture of how the loss changed over the epochs
 
-    loss = history.history["loss"]
-    val_loss = history.history["val_loss"]
-    epochs = range(1, len(loss) + 1)
-
-    plt.plot(epochs, loss, label="Training loss")
-    plt.plot(epochs, val_loss, label="Validation loss")
-    best = val_loss.index(min(val_loss)) + 1
-    plt.axvline(best, linestyle="--", label=f"Best epoch ({best})")
-    plt.xlabel("Epoch")
-    plt.ylabel("Loss (binary cross-entropy)")
-    plt.legend()
-    plt.savefig("loss_curves.png", dpi=200, bbox_inches="tight")
-    plt.savefig("training_loss.png")
-        
-=======
-
-
->>>>>>> 6513c5efaf825d95b0dbf7206d8611868b7cc452
     print("\n -----Final evaluation on Test Set -----")
     #after training, feed the model with test dataset to get its honest performance
     test_results = evaluate(model, test_dataset)

@@ -79,26 +79,21 @@ The second command should end with:
 Backbone trainable weights:1510720 of 2257984 = 66.9 percent
 ```
 
-## 6. Convert your EfficientNet models (if you have them)
+## 6. Check the converted models
 
-The 3 MobileNetV2 models are already converted and included as `.pt` files. Your EfficientNet models were never added to Git, so only your laptop has them.
-
-If these files are in your project folder, convert them so that you don't have to retrain:
-
-- `sickle_cell_effnet_lite0.keras`
-- `sickle_celll_effnet_lite0_ft30.keras` (the name really has 3 l's)
-
-```powershell
-python convert_keras_models.py
-```
-
-Any file it can't find is skipped with a message. Then check the result:
+All 5 trained models (3 MobileNetV2 and 2 EfficientNet-Lite0) are already converted and included as `.pt` files. To check the EfficientNet ones:
 
 ```powershell
 python eval_effnet_lite0.py
 ```
 
-If you don't have those files, you can make new ones with step 7.
+If anyone retrains a model with the old TensorFlow code and commits a new `.keras` file, run this to update the `.pt` files from it:
+
+```powershell
+python convert_keras_models.py
+```
+
+Any `.keras` file it can't find is skipped with a message.
 
 ## 7. Run the scripts
 
@@ -106,9 +101,9 @@ You only need these if you want to retrain. Each one saves its model as a `.pt` 
 
 | Order | Command | What it does | Saves |
 | --- | --- | --- | --- |
-| 1 | `python step3_train_model.py` | Trains MobileNetV2 | `sickle_cell_model.pt` |
-| 2 | `python step4_finetune_model.py` | Fine-tunes MobileNetV2 | `Sickle_cell_fine_tuned-mode.pt` |
-| 3 | `python step5_train_edge_model.py` | Trains the small edge model | `sickle_cell_edge_model.pt` |
+| 1 | `python step3_train_model.py` | Trains MobileNetV2 | `sickle_cell_model.pt`, `loss_curves.png`, `training_loss.png` |
+| 2 | `python step4_finetune_model.py` | Fine-tunes MobileNetV2 | `Sickle_cell_fine_tuned-mode.pt`, `training_loss_finetune.png` |
+| 3 | `python step5_train_edge_model.py` | Trains the small edge model | `sickle_cell_edge_model.pt`, `training_loss_edge.png` |
 | 4 | `python train_efficientnet_lite0.py` | Trains EfficientNet-Lite0 | `sickle_cell_effnet_lite0.pt` |
 | 5 | `python finetune_efficientnet_lite0.py` | Fine-tunes EfficientNet-Lite0 | `sickle_cell_effnet_lite0_ft30.pt` |
 | 6 | `python eval_effnet_lite0.py` | Prints the confusion matrix | Nothing |
@@ -125,6 +120,10 @@ python app.py
 
 The web page is at <http://127.0.0.1:5000>. As before, `app.py` only receives the uploaded file and doesn't use a model yet.
 
+The loss plots show the training and validation loss for each epoch, with a dashed line on the best epoch.
+
+`augmentation_check.py`, `eval_all_models.py` and `check_quantisation.py` still use TensorFlow and the `.keras` files, so they don't run in this environment.
+
 ## What changed
 
 - **Models:** the files are now `.pt` instead of `.keras`. The original `.keras` files are still in the project, and `convert_keras_models.py` uses them.
@@ -134,6 +133,7 @@ The web page is at <http://127.0.0.1:5000>. As before, `app.py` only receives th
 - **Layer order:** every layer keeps its Keras name and position, so "the last 30 layers" still means the same layers.
 - **Augmentation:** it follows the same formulas as the Keras layers, because the built-in PyTorch versions work differently.
 - **Fixed file name:** `finetune_efficientnet_lite0.py` used to save to `sickle_celll_...` with 3 l's, so `eval_effnet_lite0.py` couldn't find the model. It now saves to `sickle_cell_effnet_lite0_ft30.pt`.
+- **Loss plots:** steps 3, 4 and 5 save a plot of the loss curves through `plot_loss` in `pytorch_training.py`.
 
 ## Results to expect
 

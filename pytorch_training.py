@@ -238,3 +238,26 @@ def fit(model, training_dataset, validation_data, epochs, class_weight, learning
 
     model.load_state_dict(best_weights) #end on the full pass with the best validation performance
     return history
+
+
+def plot_loss(history, *filenames):
+    #Draws the training and validation loss of every epoch, with a dashed line on the best epoch, and saves it to each file given
+    import matplotlib
+    matplotlib.use("Agg") #draw straight to a file, no window needed
+    import matplotlib.pyplot as plt
+
+    loss = [logs["loss"] for logs in history]
+    val_loss = [logs["val_loss"] for logs in history]
+    epochs = range(1, len(loss) + 1)
+    best = val_loss.index(min(val_loss)) + 1
+
+    plt.figure()
+    plt.plot(epochs, loss, label="Training loss")
+    plt.plot(epochs, val_loss, label="Validation loss")
+    plt.axvline(best, linestyle="--", label=f"Best epoch ({best})")
+    plt.xlabel("Epoch")
+    plt.ylabel("Loss (binary cross-entropy)")
+    plt.legend()
+    for filename in filenames:
+        plt.savefig(filename, dpi=200, bbox_inches="tight")
+    plt.close()

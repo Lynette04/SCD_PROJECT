@@ -1,6 +1,6 @@
 #Converts the models trained with Keras into PyTorch files, without retraining them.
 #This only needs to run once. The MobileNetV2 .pt files are already in the project.
-#The EfficientNet .keras files were never added to the project, so they are converted only if they are on this computer.
+#Any .keras file that is missing on this computer is skipped.
 import io #to open the weights file from inside the .keras file without unpacking it
 import os #to check whether a file exists
 import zipfile #a .keras file is really a zip file
@@ -20,8 +20,7 @@ MODELS = [
     ("Sickle_cell_fine_tuned-mode.keras", "Sickle_cell_fine_tuned-mode.pt", "mobilenet_v2", 1.0, MOBILENET_GROUP),
     ("sickle_cell_edge_model.keras", "sickle_cell_edge_model.pt", "mobilenet_v2", 0.35, MOBILENET_GROUP),
     ("sickle_cell_effnet_lite0.keras", "sickle_cell_effnet_lite0.pt", "efficientnet_lite0", 1.0, EFFICIENTNET_GROUP),
-    #the fine tuning script used to save this file with 3 l's in its name
-    ("sickle_celll_effnet_lite0_ft30.keras", "sickle_cell_effnet_lite0_ft30.pt", "efficientnet_lite0", 1.0, EFFICIENTNET_GROUP),
+    ("sickle_cell_effnet_lite0_ft30.keras", "sickle_cell_effnet_lite0_ft30.pt", "efficientnet_lite0", 1.0, EFFICIENTNET_GROUP),
 ]
 
 
