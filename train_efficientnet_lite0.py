@@ -1,4 +1,4 @@
-from pytorch_training import build_pretrained_model, evaluate, fit, save_model, set_random_seed, summary
+from pytorch_training import build_pretrained_model, evaluate,plot_loss, fit, save_model, set_random_seed, summary
 from step2_data_pipeline import get_datasets, get_class_weights, efficientnet_preprocess
 
 img_size = (224,224) #resizing all images to 224 by 224 pixels
@@ -10,7 +10,7 @@ def build_model():
     #The added layers are the same as MobileNetV2: squeeze each image grid into a compact list of 1280 numbers,
     #randomly switch off 30% of the values during training to reduce overfitting,
     #and make a final decision: one number between 0 and 1 (0 is normal and 1 is sickle)
-    model = build_pretrained_model("efficientnet_lite0")
+    model = build_pretrained_model("efficientnet_lite0", dropout_rate=0.4)
     summary(model) #print a table of the layers and parameter counts
     return model
 
@@ -33,9 +33,11 @@ if __name__ == "__main__":
         epochs=15,
         class_weight=class_weights,
         learning_rate=1e-3,
+        weight_decay=1e-4,
         patience=4
     )
-
+    plot_loss(history, "effnet_loss_curves.png", "training_efficientnet_loss.png")
+    
     print("\n -----Final evaluation on Test Set-----")
     test_results = evaluate(model, test_dataset)
     for metric_name, value in test_results.items():
