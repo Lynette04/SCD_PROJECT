@@ -1,15 +1,15 @@
-from pytorch_training import count_params, count_trainable_params, evaluate, fit, load_model, save_model, set_random_seed, unfreeze_last_layers
+from pytorch_training import count_params, count_trainable_params, evaluate, plot_loss, fit, load_model, save_model, set_random_seed, unfreeze_last_layers
 from step2_data_pipeline import get_datasets, get_class_weights,efficientnet_preprocess #data pipeline
 
 #random seed = 42, so that a re-run gives the same result.
 set_random_seed(42)
 
 #layers to be activated (30 last layers)
-UNFREEZE_LAST = 30
+UNFREEZE_LAST = 8
 
 #load the frozen layer efficientnet model
 model = load_model("sickle_cell_effnet_lite0.pt")
-
+model.dropout.p = 0.4
 #the backbone inside the model
 base_model = model.base_model
 print(f"Base model has {len(base_model.layers)} layers.")
@@ -39,9 +39,10 @@ history = fit(
     epochs=12,
     class_weight=class_weights,
     learning_rate=1e-5, #same learning rate as MobileNetV2 fine tuned model
-    patience=4
+    weight_decay= 1e-4,
+    patience=6
 )
-
+plot_loss(history, "effnet_loss_curves.png", "training_efficientnetft_loss.png")
 #evaluate on the test images
 test_results = evaluate(model, test_dataset)
 for metric_name, value in test_results.items():
