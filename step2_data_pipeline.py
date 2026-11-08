@@ -83,7 +83,7 @@ class RandomContrast(nn.Module): #randomize the contrast by 0.1
 #create a sort of pipeline with ordered steps(sequential) to perform on the training set images
 data_augmentation = nn.Sequential(
     RandomFlip(),
-    RandomRotation(0.1),
+    RandomRotation(0.5),
     RandomBrightness(0.1),
     RandomContrast(0.1),
 )
