@@ -1,4 +1,4 @@
-from pytorch_training import build_pretrained_model, evaluate, fit, plot_loss, save_model, summary
+from pytorch_training import build_pretrained_model, evaluate, fit, plot_loss,set_random_seed, save_model, summary
 from step2_data_pipeline import get_datasets, get_class_weights
 
 img_size= (224,224)
@@ -11,7 +11,7 @@ def build_edge_model():
 if __name__== "__main__":
     training_dataset, validation_dataset, test_dataset, class_names = get_datasets()
     class_weights, class_counts = get_class_weights()
-
+    set_random_seed(42)
     model = build_edge_model()
     summary(model)
 
@@ -20,10 +20,11 @@ if __name__== "__main__":
         model,
         training_dataset,
         validation_data= validation_dataset,
-        epochs=15,
+        epochs=25,
         class_weight=class_weights,
         learning_rate=1e-3,
-        patience=4
+        patience=5,
+        verbose=True
     )
     plot_loss(history, "training_loss_edge.png")
 
