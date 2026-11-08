@@ -32,4 +32,10 @@ for name, file, prep in MODELS:                       # handle one model at a ti
 
     print("\n" + name)
     print(cm)
-    print(f"accuracy {(tp + tn) / cm.sum():.3f} | precision {tp / (tp + fp):.3f} | recall {tp / (tp + fn):.3f}")
+    
+    precision = tp / (tp + fp) if (tp + fp) > 0 else 0.0
+    recall = tp / (tp +fn) if (tp+fn) > 0 else 0.0
+    f1 = (2 * precision * recall) / (precision + recall) if (precision + recall) > 0 else 0.0
+    
+    print(f"accuracy {(tp + tn) / cm.sum():.3f} | precision {precision:.3f} | recall {recall:.3f} | f1{f1:.3f}")
+    
