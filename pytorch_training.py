@@ -19,10 +19,12 @@ def set_random_seed(seed):
 
 #Base model + GlobalAveragePooling + Dropout + Dense(1, sigmoid), the same head on every model
 class SickleCellClassifier(nn.Module):
-    def __init__(self, architecture="mobilenet_v2", alpha=1.0):
+    def __init__(self, architecture="mobilenet_v2", alpha=1.0, dropout_rate=0.3):
         super().__init__()
         self.architecture = architecture
         self.alpha = alpha
+        self.dropout_rate = dropout_rate
+        
         if architecture == "mobilenet_v2":
             self.base_model = pytorch_mobilenet.MobileNetV2(alpha=alpha)
         elif architecture == "efficientnet_lite0":
@@ -30,7 +32,7 @@ class SickleCellClassifier(nn.Module):
         else:
             raise ValueError(f"Unknown architecture: {architecture}")
 
-        self.dropout = nn.Dropout(0.3) #same 30% of the values randomly switched off during training
+        self.dropout = nn.Dropout(dropout_rate) #same 30% of the values randomly switched off during training
         self.dense = nn.Linear(1280, 1)
         nn.init.xavier_uniform_(self.dense.weight) #the starting values Keras gives a Dense layer
         nn.init.zeros_(self.dense.bias)
@@ -54,8 +56,9 @@ class SickleCellClassifier(nn.Module):
 
 
 #Builds a new model that starts from the ImageNet weights
-def build_pretrained_model(architecture="mobilenet_v2", alpha=1.0):
-    model = SickleCellClassifier(architecture, alpha)
+def build_pretrained_model(architecture="mobilenet_v2", alpha=1.0, dropout_rate=0.3):
+    model = SickleCellClassifier(architecture, alpha, dropout_rate=dropout_rate)
+    
     if architecture == "mobilenet_v2":
         pytorch_mobilenet.load_imagenet_weights(model.base_model)
     else:
@@ -164,11 +167,16 @@ class Metrics:
     def results(self):
         guessed_sickle = self.true_positives + self.false_positives
         actually_sickle = self.true_positives + self.false_negatives
+        precision = self.true_positives / guessed_sickle if guessed_sickle else 0.0
+        recall = self.true_positives / actually_sickle if actually_sickle else 0.0
+        f1 = (2* precision * recall) / (precision + recall) if (precision + recall) > 0 else 0.0
+        
         return {
             "accuracy": (self.true_positives + self.true_negatives) / self.images,
             "loss": self.loss_sum / self.images,
             "precision": self.true_positives / guessed_sickle if guessed_sickle else 0.0,
             "recall": self.true_positives / actually_sickle if actually_sickle else 0.0,
+            "f1": f1,
         }
 
 
@@ -192,14 +200,16 @@ def predict(model, dataset):
 
 #Like model.fit(...) with the Adam optimizer, class weights and an EarlyStopping callback that
 #watches val_loss and uses restore_best_weights=True
-def fit(model, training_dataset, validation_data, epochs, class_weight, learning_rate, patience=4):
+def fit(model, training_dataset, validation_data, epochs, class_weight, learning_rate, weight_decay=0.0, patience=4, verbose=True):
     #epsilon of 1e-7 is the Keras Adam default, PyTorch's own default is 1e-8
     optimizer = torch.optim.Adam(
         [p for p in model.parameters() if p.requires_grad],
         lr=learning_rate,
         betas=(0.9, 0.999),
         eps=1e-7,
+        weight_decay=weight_decay,
     )
+    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer,T_max=epochs, eta_min=learning_rate * 0.05)
     history = []
     best_val_loss = float("inf")
     best_weights = None
@@ -222,7 +232,10 @@ def fit(model, training_dataset, validation_data, epochs, class_weight, learning
         logs = metrics.results()
         logs.update({f"val_{k}": v for k, v in evaluate(model, validation_data).items()})
         history.append(logs)
-        print(f"Epoch {epoch + 1}/{epochs} - " + " - ".join(f"{k}: {v:.4f}" for k, v in logs.items()))
+        scheduler.step()
+        
+        if verbose:
+            print(f"Epoch {epoch + 1}/{epochs} - " + " - ".join(f"{k}: {v:.4f}" for k, v in logs.items()))
 
         if best_weights is None:
             best_weights = copy.deepcopy(model.state_dict())
@@ -233,7 +246,8 @@ def fit(model, training_dataset, validation_data, epochs, class_weight, learning
             best_weights = copy.deepcopy(model.state_dict())
             wait = 0
         elif wait >= patience and epoch > 0:
-            print(f"Epoch {epoch + 1}: early stopping")
+            if verbose: 
+                print(f"Epoch {epoch + 1}: early stopping")
             break
 
     model.load_state_dict(best_weights) #end on the full pass with the best validation performance
