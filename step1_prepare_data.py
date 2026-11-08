@@ -6,8 +6,8 @@ random.seed(42) #to get the same shuffle every time the code is run.
 
 #Create a dictionary to store the paths for the negatives and positives
 class_folders={
-    "normal": r"C:\Users\kaboh\OneDrive\Desktop\Project prototype\Sickle Cell disease dataset\Negative\Clear",
-    "sickle": r"C:\Users\kaboh\OneDrive\Desktop\Project prototype\Sickle Cell disease dataset\Positive\Unlabelled"
+    "normal": r"C:\Users\kaboh\OneDrive\Desktop\Project-prototype\Sickle Cell disease dataset\Negative\Clear",
+    "sickle": r"C:\Users\kaboh\OneDrive\Desktop\Project-prototype\Sickle Cell disease dataset\Positive\Unlabelled"
     }
 output_root = "data" #variable for folder where the organised copies of images will go
 
