@@ -1,4 +1,4 @@
-from pytorch_training import build_pretrained_model, evaluate, fit, plot_loss, save_model, summary #the model and training tools shared by the scripts
+from pytorch_training import build_pretrained_model, evaluate, fit, plot_loss, save_model, set_random_seed, summary #the model and training tools shared by the scripts
 from step2_data_pipeline import get_datasets, get_class_weights #borrow the functions of the previous file
 
 img_size = (224,224) #required size for images expected by MobileNetV2
@@ -35,29 +35,57 @@ if __name__== "__main__":
 
     print("Class names are: ", class_names)
     print("Class weights are: ", class_weights)
-
-    #build the model using build_model function
-    model = build_model()
-
-    #Actual training of the model using the training dataset to learn, the validation set for comparison
-    #it uses the class weights here
-    #Adam is the algorithm responsible for adjusting the trainable parameters based on mistakes, it is very reliable in DL.
-    #learning rate of 0.001 to control the adjustment size.
-    #binary crossentropy is a mathematical formula designed to work well with outputs that are probabilities between 0 and 1. It is used specifically for 2 class problems(Normal vs Sickle)
-    #Early stopping checks on the validation loss(how wrong the model is in recognising sickle cells),
-    #patience = 4, if it makes 4 full passes through all the training data and has no improvement, it should stop early.
-    #whatever full pass had the best validation performance, it should end on it.
-    #epoch is a full pass through all training data
-    history = fit(
-        model,
-        training_dataset,
-        validation_data= validation_dataset,
-        epochs=15,
-        class_weight=class_weights,
-        learning_rate=1e-3,
-        patience=4
-    )
-    plot_loss(history, "loss_curves.png", "training_loss.png") #save a picture of how the loss changed over the epochs
+    
+    
+    #define hyperparameter grid to explore
+    learning_rates = [1e-4, 1e-3, 3e-3]
+    dropouts = [0.2, 0.4]
+    
+    best_val_loss = float("inf")
+    best_config = None
+    best_model = None
+    best_history = None
+    
+    print("\n--- STARTING HYPERPARAMETER TUNING---")
+    for lr in learning_rates:
+        for drop in dropouts:
+            print(f"\nTesting: learning_rate={lr}, dropout={drop}")
+            
+            #Reset seed so every trial gets the same starting conditions
+            set_random_seed(42)
+            
+            #build model with trial's dropout
+            model = build_pretrained_model("mobilenet_v2", dropout_rate=drop)
+            #Actual training of the model using the training dataset to learn, the validation set for comparison
+            #it uses the class weights here
+            #Adam is the algorithm responsible for adjusting the trainable parameters based on mistakes, it is very reliable in DL.
+            #learning rate of 0.001 to control the adjustment size.
+            #binary crossentropy is a mathematical formula designed to work well with outputs that are probabilities between 0 and 1. It is used specifically for 2 class problems(Normal vs Sickle)
+            #Early stopping checks on the validation loss(how wrong the model is in recognising sickle cells),
+            #patience = 4, if it makes 4 full passes through all the training data and has no improvement, it should stop early.
+            #whatever full pass had the best validation performance, it should end on it.
+            #epoch is a full pass through all training data
+            history = fit(
+                model,
+                training_dataset,
+                validation_data= validation_dataset,
+                epochs=15,
+                class_weight=class_weights,
+                learning_rate=lr,
+                patience=4,
+                verbose=False
+            )
+            
+            min_val_loss = min(h["val_loss"] for h in history)
+            print(f"Result -> Best val_loss: {min_val_loss:.4f}")
+            
+            if min_val_loss < best_val_loss:
+                best_val_loss = min_val_loss
+                best_config = {"learning_rate": lr, "dropout": drop}
+                best_model = model
+                best_history = history
+    if best_history is not None:            
+        plot_loss(history, "loss_curves.png", "training_loss.png") #save a picture of how the loss changed over the epochs
 
     print("\n -----Final evaluation on Test Set -----")
     #after training, feed the model with test dataset to get its honest performance
@@ -66,5 +94,5 @@ if __name__== "__main__":
         print(f"{metric_name}: {value:.4f}")
 
     #save the entire trained model to a single file to prevent retraining whenever it is required for use.
-    save_model(model, "sickle_cell_model.pt")
+    save_model(best_model, "sickle_cell_model.pt")
     print("\n Model is saved to sickle_cell_model.pt")
