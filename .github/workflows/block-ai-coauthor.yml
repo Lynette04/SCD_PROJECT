@@ -1,0 +1,43 @@
+# Fails if any commit in the pushed / PR history credits Claude (Anthropic)
+# as a co-author or author, so it never shows up as a repo contributor.
+name: Block AI co-author attribution
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  check-attribution:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Scan commits for Claude / Anthropic attribution
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          # Commit messages with a Co-Authored-By trailer naming Claude/Anthropic
+          by_message=$(git log "$GITHUB_SHA" --format='%h  %an  %s' -i -E \
+            --grep='co-authored-by:.*(claude|anthropic)')
+
+          # Commits authored or committed with an anthropic.com email
+          by_author=$(git log "$GITHUB_SHA" --format='%h  %an <%ae>  %s' -i -E \
+            --author='@anthropic\.com')
+          by_committer=$(git log "$GITHUB_SHA" --format='%h  %cn <%ce>  %s' -i -E \
+            --committer='@anthropic\.com')
+
+          if [ -n "$by_message$by_author$by_committer" ]; then
+            echo "::error::Found commits attributing Claude/Anthropic as a contributor."
+            [ -n "$by_message" ]   && printf 'Co-Authored-By trailer:\n%s\n\n' "$by_message"
+            [ -n "$by_author" ]    && printf 'Author email:\n%s\n\n' "$by_author"
+            [ -n "$by_committer" ] && printf 'Committer email:\n%s\n\n' "$by_committer"
+            echo "Remove the 'Co-Authored-By: Claude ...' line (git commit --amend or"
+            echo "git rebase -i) and push again. To stop Claude Code adding it, set"
+            echo '"includeCoAuthoredBy": false in ~/.claude/settings.json.'
+            exit 1
+          fi
+
+          echo "No Claude/Anthropic attribution found."
